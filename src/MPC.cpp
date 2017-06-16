@@ -24,7 +24,7 @@ const double Lf = 2.67;
 // Useful constants
 const double REF_CTE = 0;   // desired CTE, Cross Track Error
 const double REF_EPSI = 0;  // desired EPsi
-const double REF_V  = 60;   // max car velocity, mph
+const double REF_V  = 70;   // max car velocity, mph
 
 // Start variable positions, since the Solver takes State and Actuator variables in a single vector
 size_t  x_start     = 0;
@@ -75,8 +75,8 @@ class FG_eval {
 
     // 1c - Minimize the value gap between sequential actuations
     for (int t = 0; t < N - 2; t++) {
-      fg[0] +=  200.0 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2); 
-      fg[0] +=  50.0 * CppAD::pow(vars[a_start + t + 1]  - vars[a_start + t], 2);
+      fg[0] +=  300.0 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2); 
+      fg[0] +=  2.0 * CppAD::pow(vars[a_start + t + 1]  - vars[a_start + t], 2);
     }
 
     // 2 -  Setup Constraints
