@@ -170,8 +170,8 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
-          msgJson["mpc_x"] = solution.X;    // mpc_x_vals;
-          msgJson["mpc_y"] = solution.Y;    // mpc_y_vals;
+          msgJson["mpc_x"] = solution.X;    // values from our MPC Solver
+          msgJson["mpc_y"] = solution.Y;    // values from our MPC Solver
 
           // 9 - Display the waypoints/reference line
           vector<double> next_x_vals;
