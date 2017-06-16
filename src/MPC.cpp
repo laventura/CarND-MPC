@@ -5,7 +5,7 @@
 
 using CppAD::AD;
 
-// TODO: Set the timestep length and duration
+// Set the timestep length and duration
 // size_t N = 0;
 // double dt = 0;
 
@@ -68,15 +68,17 @@ class FG_eval {
     }
 
     // 1b - Minimise the use of Actuators, i.e. minimize the change rate ([δ,a])
+    // Add Scaling factor to smooth out
     for (int t = 0; t < N - 1; t++) {
-      fg[0] +=  1.0 * CppAD::pow(vars[delta_start + t], 2); // steering angle
-      fg[0] +=  10.0 * CppAD::pow(vars[a_start + t], 2);     // acceleration (throttle)
+      fg[0] +=  SCALE_DELTA * CppAD::pow(vars[delta_start + t], 2); // steering angle
+      fg[0] +=  SCALE_ACC   * CppAD::pow(vars[a_start + t], 2);     // acceleration (throttle)
     }
 
     // 1c - Minimize the value gap between sequential actuations
+    // Add Scaling factor to smooth out
     for (int t = 0; t < N - 2; t++) {
-      fg[0] +=  300.0 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2); 
-      fg[0] +=  2.0 * CppAD::pow(vars[a_start + t + 1]  - vars[a_start + t], 2);
+      fg[0] +=  SCALE_DELTA_D * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2); 
+      fg[0] +=  SCALE_ACC_D   * CppAD::pow(vars[a_start + t + 1]  - vars[a_start + t], 2);
     }
 
     // 2 -  Setup Constraints
@@ -201,7 +203,7 @@ Resultant MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs) {
     vars_upperbound[i]  = 0.436332;   // +25 deg in radians
   }
 
-  // 4c - set delta to previous 
+  // 4c - set delta to previous: this helps smoothen out changes in steering
   for (int i = delta_start; i < delta_start + Latency_dt; i++) {
     vars_lowerbound[i] = delta_previous;  
     vars_upperbound[i] = delta_previous;
@@ -213,9 +215,9 @@ Resultant MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs) {
     vars_upperbound[i] = 1.0;
   }
 
-  // 4e - acceleration previous
+  // 4e - acceleration previous: this helps smoothen out changes in acceleration
   for (int i = a_start; i < a_start + Latency_dt; i++) {
-    vars_lowerbound[i] = acc_previous;    // FIXME: TODO
+    vars_lowerbound[i] = acc_previous;    
     vars_upperbound[i] = acc_previous;
   }
   
@@ -279,25 +281,31 @@ Resultant MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs) {
   // Check some of the solution values
   ok &= solution.status == CppAD::ipopt::solve_result<Dvector>::success;
 
-  Resultant result;
+  Resultant result; // struct sent to Simulator
   for (auto k = 0; k < N - 1; k++) {
-    cout << k << ": " << "sol.x[x_start+k]: " << solution.x[x_start+k] << " sol.x[y_start+k]: " << solution.x[y_start+k] << endl;
-    result.X.push_back(solution.x[x_start + k]);
+    // cout << k << ": " << "x_start+k: " << solution.x[x_start+k] << ", y_start+k: " << solution.x[y_start+k] << endl;
+    // we really only need these four values for Simulator
+    result.X.push_back(solution.x[x_start + k]);          // X, Y values to send to Simulator
     result.Y.push_back(solution.x[y_start + k]);
-    result.Delta.push_back(solution.x[delta_start + k]);
-    result.A.push_back(solution.x[a_start + k]);
+    result.Delta.push_back(solution.x[delta_start + k]);  // Steering angle to send to Simulator
+    result.A.push_back(solution.x[a_start + k]);          // Accelerator to send to Simulator
+    // values below not really sent to Simulator
+    result.Psi.push_back(solution.x[psi_start + k]);
+    result.V.push_back(solution.x[v_start + k]);
+    result.CTE.push_back(solution.x[cte_start + k]);
+    result.EPsi.push_back(solution.x[epsi_start + k]);
   }
 
   // Cost
   auto cost = solution.obj_value;
   std::cout << "Cost     " << cost << std::endl;
 
-  // TODO: Return the first actuator values. The variables can be accessed with
+  // Return the first actuator values. The variables can be accessed with
   // `solution.x[i]`.
   //
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
 
-  // FIXME: TODO - finish this
-  return result;  // {};
+  //
+  return result; 
 }
