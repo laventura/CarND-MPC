@@ -6,6 +6,23 @@
 
 using namespace std;
 
+const size_t N  = 20;
+const double dt = 0.05;   // 50 ms
+// T, number of time steps = N * dt
+const int Latency_dt = 2; // Latency in units of dt
+
+// Result from the Solver
+struct Resultant {
+    vector<double>  X;      // X coordinate
+    vector<double>  Y;      // Y coordinate
+    vector<double>  Psi;    // Orientation angle
+    vector<double>  V;      // Velocity
+    vector<double>  CTE;    // Cross Track Error
+    vector<double>  EPsi;   // Orientation angle Error
+    vector<double>  Delta;  // Steering angle
+    vector<double>  A;      // Acceleration (throttle)
+};
+
 class MPC {
  public:
   MPC();
@@ -13,8 +30,12 @@ class MPC {
   virtual ~MPC();
 
   // Solve the model given an initial state and polynomial coefficients.
-  // Return the first actuatotions.
-  vector<double> Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs);
+  // Return the first actuations.
+  Resultant Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs);
+
+  double delta_previous {0};
+  double acc_previous {0.1};
+
 };
 
 #endif /* MPC_H */
